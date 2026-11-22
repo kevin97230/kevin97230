@@ -7,6 +7,7 @@ import ia.assistant.core.PlatformServices
 import ia.assistant.core.audit.FileAuditLog
 import ia.assistant.core.bridge.TokenAuthenticator
 import ia.assistant.core.infrared.IrLibrary
+import ia.assistant.core.network.SettingsStore
 import ia.assistant.core.security.Principal
 import ia.assistant.core.security.Role
 import java.io.File
@@ -30,6 +31,7 @@ class AssistantApp : Application() {
                 confirmations = confirmations,
                 audit = FileAuditLog(File(filesDir, "journal.jsonl")),
                 irLibrary = ::loadIrLibrary,
+                settings = PreferencesSettings(getSharedPreferences("reglages", Context.MODE_PRIVATE)),
             ),
         )
         runtime.pairOwnerComputer(ownerToken())
@@ -66,5 +68,13 @@ class AssistantApp : Application() {
 
         /** Le propriétaire quand il agit directement sur son téléphone. */
         val LOCAL_OWNER = Principal(id = "proprietaire-local", displayName = "Propriétaire (téléphone)", role = Role.OWNER)
+    }
+}
+
+/** Réglages conservés dans le téléphone. */
+class PreferencesSettings(private val prefs: android.content.SharedPreferences) : SettingsStore {
+    override fun get(key: String): String? = prefs.getString(key, null)
+    override fun set(key: String, value: String) {
+        prefs.edit().putString(key, value).apply()
     }
 }

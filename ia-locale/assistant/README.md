@@ -1,4 +1,4 @@
-# Assistant — étape 1 : fondations, pont avec Claude, télécommande infrarouge
+# Assistant — étape 1 : fondations, pont avec Claude, télécommande
 
 Première brique du projet décrit dans [`../VISION.md`](../VISION.md).
 
@@ -10,6 +10,7 @@ Première brique du projet décrit dans [`../VISION.md`](../VISION.md).
 | 📒 **Journal de bord** | Chaque action est enregistrée : qui, quoi, quand, résultat |
 | 🌉 **Pont avec Claude** | Le téléphone expose ses fonctions à Claude via **MCP** (`http://<ip>:8765/mcp`), protégé par un jeton secret |
 | 📡 **Télécommande infrarouge** | Votre **TV Panasonic** préconfigurée (38 touches, dont Netflix, YouTube, Prime Video). Protocoles **Kaseikyo** (Panasonic), **NEC** (LG, beaucoup de décodeurs et ventilateurs) et **Samsung** |
+| 📺 **Décodeur TV Orange** | Par le **Wi-Fi** (pas besoin de viser) : recherche automatique, touches, changement de chaîne par numéro, état allumé/veille |
 | 🔔 **Notifications** | Claude peut vous envoyer un message sur le téléphone |
 | 📱 **État du téléphone** | Batterie, modèle, réseau, infrarouge |
 
@@ -19,6 +20,10 @@ Première brique du projet décrit dans [`../VISION.md`](../VISION.md).
 |---|---|
 | `ir_lister_appareils` | Liste les appareils et leurs touches |
 | `ir_envoyer_touche` | Appuie sur une touche (`appareil`, `touche`, `repetitions`) |
+| `decodeur_rechercher` | Trouve le décodeur Orange sur le Wi-Fi et retient son adresse |
+| `decodeur_touche` | Appuie sur une touche du décodeur (`touche`, `repetitions`) |
+| `decodeur_chaine` | Met une chaîne par son numéro (`numero`) |
+| `decodeur_etat` | Décodeur allumé ou en veille, programme en cours |
 | `telephone_notifier` | Affiche une notification sur le téléphone |
 | `telephone_etat` | Donne l'état du téléphone |
 | `systeme_journal` | Lit le journal de bord |
@@ -35,16 +40,22 @@ assistant/
 
 ## Essai 1 — sur l'ordinateur, sans téléphone (5 minutes)
 
-Prérequis : Java 17 ou plus récent, et Claude Code.
+Prérequis : Java 17 ou plus récent (par exemple Eclipse Temurin 21) et Claude Code.
 
-```bash
-cd ia-locale/assistant
-./gradlew :simulator:installDist          # Windows : gradlew.bat :simulator:installDist
-simulator/build/install/simulator/bin/simulator
+Sous **Windows** (PowerShell) :
+
+```powershell
+cd ia-locale\assistant
+.\gradlew.bat :simulator:installDist
+.\simulator\build\install\simulator\bin\simulator.bat
 ```
+
+Sous Mac ou Linux : `./gradlew :simulator:installDist` puis `simulator/build/install/simulator/bin/simulator`.
 
 Le simulateur affiche une commande `claude mcp add …`. Copiez-la dans un autre terminal, lancez `claude`,
 puis demandez par exemple : *« Liste les appareils infrarouges et monte le volume de la TV du salon de 3 crans. »*
+Le simulateur cherche aussi le décodeur Orange sur le réseau de l'ordinateur : si l'ordinateur est sur le Wi-Fi
+de la Livebox, *« Trouve le décodeur et mets la chaîne 2 »* fonctionne déjà pour de vrai.
 Les signaux infrarouges s'affichent dans la console du simulateur.
 
 ## Essai 2 — sur le téléphone
@@ -78,6 +89,15 @@ Les codes de milliers d'appareils sont publiés dans la base libre **Flipper-IRD
 > Les climatiseurs utilisent des protocoles plus longs (l'état complet est envoyé à chaque appui) :
 > ils arriveront dans une prochaine étape, avec le Wi-Fi et le Bluetooth.
 
+## Le décodeur Orange
+
+Le décodeur se pilote par le Wi-Fi grâce à son API locale (port 8080). Le téléphone doit être sur le Wi-Fi
+de la Livebox. Touchez **Rechercher le décodeur** dans l'appli, ou demandez-le à Claude : l'adresse est retenue.
+Pour éviter qu'elle change, vous pouvez réserver une adresse fixe au décodeur dans l'interface de la Livebox
+(http://192.168.1.1, *Réseau → DHCP*).
+
+Par sécurité, l'IA ne contacte que des adresses du réseau local (`192.168.x.x`, `10.x.x.x`, `172.16-31.x.x`).
+
 ## Sécurité : ce qui est en place, ce qui reste à faire
 
 En place :
@@ -98,4 +118,4 @@ En place :
 ./gradlew test
 ```
 
-19 tests couvrent la sécurité, l'encodage infrarouge, le protocole MCP et le transport HTTP (jeton, refus des navigateurs).
+22 tests couvrent la sécurité, l'encodage infrarouge, le protocole MCP et le transport HTTP (jeton, refus des navigateurs).

@@ -18,6 +18,7 @@ import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import ia.assistant.core.bridge.McpHttpServer
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import java.text.SimpleDateFormat
@@ -105,6 +106,23 @@ class MainActivity : Activity() {
             }
         }
 
+        // --- Décodeur Orange (par le Wi-Fi) ---
+        column.addView(title("Décodeur TV Orange (Wi-Fi)", 18f))
+        column.addView(button("Rechercher le décodeur sur le Wi-Fi") {
+            runTool("decodeur_rechercher", buildJsonObject {})
+        })
+        listOf("allumer", "chaine_suivante", "chaine_precedente", "volume_plus", "volume_moins", "muet", "ok", "retour", "menu")
+            .chunked(3).forEach { row ->
+                val line = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+                row.forEach { key ->
+                    line.addView(
+                        button(key.replace('_', ' ')) { runTool("decodeur_touche", buildJsonObject { put("touche", key) }) },
+                        LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f),
+                    )
+                }
+                column.addView(line)
+            }
+
         // --- Journal ---
         column.addView(title("Journal de bord", 18f))
         journalView = TextView(this).apply {
@@ -126,13 +144,18 @@ class MainActivity : Activity() {
         }
     }
 
-    private fun sendIr(deviceId: String, button: String) {
-        val args = buildJsonObject {
+    private fun sendIr(deviceId: String, button: String) = runTool(
+        "ir_envoyer_touche",
+        buildJsonObject {
             put("appareil", deviceId)
             put("touche", button)
-        }
+        },
+    )
+
+    /** Exécute un outil en tant que propriétaire, hors du fil de l'interface (réseau, infrarouge). */
+    private fun runTool(name: String, args: JsonObject) {
         Thread {
-            val result = runtime.executor.call(AssistantApp.LOCAL_OWNER, "ir_envoyer_touche", args)
+            val result = runtime.executor.call(AssistantApp.LOCAL_OWNER, name, args)
             runOnUiThread {
                 Toast.makeText(this, result.text, Toast.LENGTH_SHORT).show()
                 refresh()

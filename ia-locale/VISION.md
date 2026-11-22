@@ -222,7 +222,7 @@ La sécurité (module 6) n'est pas une phase : elle est intégrée **dès la pha
 
 - ✅ **Phase 0** (en partie) : registre d'outils, modèle de sécurité (rôles, autorisations, validation, arrêt d'urgence), journal de bord
 - ✅ **Phase 1** : pont MCP téléphone ↔ Claude (testé avec Claude Code via le simulateur)
-- 🟡 **Phase 2** : télécommande infrarouge (Kaseikyo/Panasonic, NEC, Samsung), TV Panasonic préconfigurée ; Wi-Fi, Bluetooth et climatiseurs à venir
+- 🟡 **Phase 2** : télécommande infrarouge (Kaseikyo/Panasonic, NEC, Samsung), TV Panasonic préconfigurée ; décodeur Orange par le Wi-Fi ; Android TV par le Wi-Fi, Bluetooth et clim Daikin à venir
 
 Code et guide d'installation : [`assistant/`](assistant/README.md).
 
@@ -242,10 +242,10 @@ Code et guide d'installation : [`assistant/`](assistant/README.md).
 ## 8. Informations à compléter
 
 - [x] Téléphone : REDMI Note 15 Pro+ 5G, Android 16, HyperOS 3
-- [ ] Système de l'ordinateur (Windows / Mac / Linux)
-- [x] TV : Panasonic TX-55LX650E (codes infrarouges intégrés) — Android TV à confirmer
-- [x] Box internet : Orange Livebox 5 — décodeur TV Orange à confirmer
-- [ ] Clim et ventilateur : infrarouge seulement ou Wi-Fi ?
+- [x] Ordinateur : Windows
+- [x] TV : Panasonic TX-55LX650E, Android TV (infrarouge en place ; pilotage Wi-Fi à venir)
+- [x] Box internet : Orange Livebox 5 + décodeur TV Orange (pilotage Wi-Fi en place)
+- [ ] Clim : Daikin — infrarouge seulement ou Wi-Fi (appli Onecta) ? Modèle de la télécommande ?
 - [ ] Courtier / plateforme du compte démo de trading
 - [ ] Âge des enfants et leurs appareils (tablettes, montres, consoles)
 - [ ] Nom de l'IA
