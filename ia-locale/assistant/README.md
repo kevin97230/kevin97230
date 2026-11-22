@@ -9,7 +9,7 @@ Première brique du projet décrit dans [`../VISION.md`](../VISION.md).
 | 🔐 **Sécurité** | Rôles (propriétaire, confiance, enfant, invité, inconnu), autorisations appareil par appareil, validation du propriétaire pour les actions critiques, accès temporaires, **arrêt d'urgence** (engageable à distance, levable **uniquement sur le téléphone**) |
 | 📒 **Journal de bord** | Chaque action est enregistrée : qui, quoi, quand, résultat |
 | 🌉 **Pont avec Claude** | Le téléphone expose ses fonctions à Claude via **MCP** (`http://<ip>:8765/mcp`), protégé par un jeton secret |
-| 📡 **Télécommande infrarouge** | Votre **TV Panasonic** préconfigurée (38 touches, dont Netflix, YouTube, Prime Video). Protocoles **Kaseikyo** (Panasonic), **NEC** (LG, beaucoup de décodeurs et ventilateurs) et **Samsung** |
+| 📡 **Télécommande infrarouge** | Votre **TV Panasonic** préconfigurée (41 touches, protocole **RC5** : la TX-55LX660E est fabriquée par Vestel). Protocoles **RC5**, **Kaseikyo** (Panasonic classiques), **NEC** et **Samsung** |
 | 📺 **TV Android par le Wi-Fi** | Votre TV Panasonic (Android TV) pilotée **sans viser** : appairage unique avec un code affiché sur la TV, toutes les touches, ouverture directe de Netflix, YouTube, Prime Video |
 | 📺 **Décodeur TV Orange** | Par le **Wi-Fi** (pas besoin de viser) : recherche automatique, touches, changement de chaîne par numéro, état allumé/veille |
 | 🔔 **Notifications** | Claude peut vous envoyer un message sur le téléphone |
@@ -89,8 +89,9 @@ dans le dossier de l'application (*Android Studio → Device Explorer → `/data
 Les codes de milliers d'appareils sont publiés dans la base libre **Flipper-IRDB** : les lignes `address:` et
 `command:` de ses fichiers `.ir` se copient telles quelles (ex. `"80 02 20 00"`).
 
-> Les codes Panasonic fournis viennent de Flipper-IRDB et sont communs à la plupart des télécommandes Panasonic
-> récentes. Testez d'abord `allumer` et `volume_plus` : si une touche ne réagit pas, signalez-le pour qu'on l'ajuste.
+> La TV Panasonic TX-55LX660E est fabriquée par Vestel : elle répond au protocole RC5 (adresse 1), pas aux codes
+> Panasonic habituels. Volume et muet ont été vérifiés sur la TV ; les autres codes viennent de télécommandes Vestel
+> de Flipper-IRDB (Telefunken, JVC, Finlux). Si une touche ne réagit pas, signalez-le pour qu'on l'ajuste.
 > Les climatiseurs utilisent des protocoles plus longs (l'état complet est envoyé à chaque appui) :
 > ils arriveront dans une prochaine étape, avec le Wi-Fi et le Bluetooth.
 
@@ -138,4 +139,4 @@ En place :
 ./gradlew test
 ```
 
-25 tests couvrent la sécurité, l'encodage infrarouge, le protocole MCP et le transport HTTP (jeton, refus des navigateurs).
+26 tests couvrent la sécurité, l'encodage infrarouge, le protocole MCP et le transport HTTP (jeton, refus des navigateurs).

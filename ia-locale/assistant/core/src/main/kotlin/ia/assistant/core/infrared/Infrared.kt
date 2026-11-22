@@ -27,6 +27,12 @@ enum class IrProtocol {
      * identifiant fabricant (0x2002 pour Panasonic), appareil, sous-appareil.
      */
     KASEIKYO,
+
+    /**
+     * RC5 (Philips) : utilisé par les TV fabriquées par Vestel (dont certaines Panasonic, Telefunken, JVC…).
+     * Adresse 0–31, commande 0–127.
+     */
+    RC5,
 }
 
 object IrEncoder {
@@ -34,12 +40,17 @@ object IrEncoder {
     private const val PANASONIC_CARRIER_HZ = 37_000
 
     fun encode(protocol: IrProtocol, address: Int, command: Int): IrSignal {
-        val maxCommand = if (protocol == IrProtocol.KASEIKYO) 0x3FF else 0xFF
+        val maxCommand = when (protocol) {
+            IrProtocol.KASEIKYO -> 0x3FF
+            IrProtocol.RC5 -> 0x7F
+            else -> 0xFF
+        }
         require(command in 0..maxCommand) { "Commande hors limites : $command" }
         return when (protocol) {
             IrProtocol.NEC -> nec(address, command)
             IrProtocol.SAMSUNG32 -> samsung32(address, command)
             IrProtocol.KASEIKYO -> kaseikyo(address, command)
+            IrProtocol.RC5 -> rc5(address, command)
         }
     }
 
@@ -83,6 +94,49 @@ object IrEncoder {
 
         val data = bytes.foldIndexed(0L) { i, acc, b -> acc or (b.toLong() shl (8 * i)) }
         return pulseDistance(PANASONIC_CARRIER_HZ, intArrayOf(3456, 1728), data, 48, bitOn = 432, zeroOff = 432, oneOff = 1296)
+    }
+
+    private const val RC5_CARRIER_HZ = 36_000
+    private const val RC5_HALF_BIT = 889
+    private const val RC5_FRAME_GAP = 90_000
+    private val rc5Toggle = java.util.concurrent.atomic.AtomicInteger(0)
+
+    /**
+     * RC5 : 14 bits, poids fort en premier — S1=1, S2 (1 si commande < 64), bit de bascule,
+     * 5 bits d'adresse, 6 bits de commande. Codage Manchester (1 = silence puis émission),
+     * demi-bit de 889 µs. Le bit de bascule s'inverse à chaque appui, pour que la TV distingue
+     * deux appuis d'une touche maintenue. La trame est envoyée deux fois.
+     */
+    private fun rc5(address: Int, command: Int): IrSignal {
+        require(address in 0..31) { "Adresse RC5 hors limites : $address" }
+        val toggle = rc5Toggle.getAndIncrement() and 1
+        val s2 = if (command < 64) 1 else 0
+        val bits = (1 shl 13) or (s2 shl 12) or (toggle shl 11) or (address shl 6) or (command and 0x3F)
+
+        val halves = ArrayList<Boolean>(28) // vrai = émission
+        for (i in 13 downTo 0) {
+            val one = (bits shr i) and 1 == 1
+            halves += !one
+            halves += one
+        }
+        // On ne garde que ce qui va de la première à la dernière émission, puis on regroupe les demi-bits identiques.
+        val trimmed = halves.dropWhile { !it }.dropLastWhile { !it }
+        val frame = mutableListOf<Int>()
+        var level = trimmed.first()
+        var count = 0
+        for (h in trimmed) {
+            if (h == level) {
+                count++
+            } else {
+                frame += count * RC5_HALF_BIT
+                level = h
+                count = 1
+            }
+        }
+        frame += count * RC5_HALF_BIT
+
+        val pattern = (frame + RC5_FRAME_GAP + frame).toIntArray()
+        return IrSignal(RC5_CARRIER_HZ, pattern)
     }
 
     private fun pulseDistance(

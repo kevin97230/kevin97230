@@ -72,10 +72,10 @@ class IrSendButtonTool(
             return ToolResult.error("Aucun émetteur infrarouge disponible sur cet appareil.")
         }
 
-        val signal = device.signalFor(button)
         repeat(repeats) { i ->
             if (i > 0) Thread.sleep(pauseBetweenRepeatsMillis)
-            transmitter.transmit(signal)
+            // Signal recalculé à chaque appui (bit de bascule RC5 : chaque appui est distinct).
+            transmitter.transmit(device.signalFor(button))
         }
         val times = if (repeats > 1) " ($repeats fois)" else ""
         return ToolResult.ok("Touche « $button » envoyée à ${device.name}$times.")
