@@ -73,6 +73,7 @@ class MainActivity : Activity() {
         column.addView(bridgeButton)
         column.addView(button("Copier la commande pour Claude (ordinateur)") { copyClaudeCommand() })
         column.addView(button("Nouveau jeton (révoque l'ancien)") { confirmNewToken() })
+        column.addView(button("Diagnostic du téléphone") { showDiagnostic() })
 
         // --- Sécurité ---
         column.addView(title("Sécurité", 18f))
@@ -163,6 +164,16 @@ class MainActivity : Activity() {
         }.start()
     }
 
+    /** Affiche l'état du téléphone (infrarouge, réseau…) pour aider au dépannage. */
+    private fun showDiagnostic() {
+        val text = DeviceStatus.read(this, runtime).entries.joinToString("\n") { (k, v) -> "$k : $v" }
+        AlertDialog.Builder(this)
+            .setTitle("Diagnostic")
+            .setMessage(text)
+            .setPositiveButton("OK", null)
+            .show()
+    }
+
     private fun toggleEmergency() {
         if (runtime.emergencyStop.engaged) {
             // Lever l'arrêt d'urgence n'est possible qu'ici, sur le téléphone.
@@ -222,7 +233,7 @@ class MainActivity : Activity() {
 
         val format = SimpleDateFormat("dd/MM HH:mm:ss", Locale.FRANCE)
         journalView.text = runtime.audit.recent(15).reversed().joinToString("\n") {
-            "${format.format(Date(it.timestampMillis))} ${it.principalName} · ${it.tool} · ${it.outcome}"
+            "${format.format(Date(it.timestampMillis))} · ${it.tool} · ${it.outcome}\n   → ${it.detail.take(200)}"
         }.ifEmpty { "(vide)" }
     }
 

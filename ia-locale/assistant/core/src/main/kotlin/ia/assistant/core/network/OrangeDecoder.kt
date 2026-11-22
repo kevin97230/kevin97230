@@ -23,7 +23,7 @@ import java.net.URI
  * Client de l'API locale des décodeurs TV Orange (port 8080, sur le Wi-Fi de la maison) :
  * `remoteControl/cmd?operation=10` (état) et `operation=01&key=…&mode=0` (appui sur une touche).
  */
-class OrangeDecoderClient(private val port: Int = DEFAULT_PORT) {
+class OrangeDecoderClient(val port: Int = DEFAULT_PORT) {
 
     /** Données d'état du décodeur (champ `result.data`). */
     fun status(host: String, timeoutMs: Int = 3000): JsonObject {
@@ -114,15 +114,21 @@ class OrangeDecoderFindTool(
 
     override fun execute(arguments: JsonObject, context: ToolContext): ToolResult {
         val given = (arguments["adresse"] as? JsonPrimitive)?.content?.trim()?.takeIf { it.isNotEmpty() }
-        val found = if (given != null) {
+        val hosts = if (given != null) {
             if (!LocalNetwork.isLocalIpv4(given)) throw ToolArgumentException("Adresse « $given » refusée : réseau local uniquement.")
-            listOfNotNull(given.takeIf { client.probe(it, timeoutMs = 2000) })
+            listOf(given)
         } else {
-            LocalNetwork.scan(candidates()) { client.probe(it) }
+            candidates()
         }
+        if (hosts.isEmpty()) {
+            return ToolResult.error("Aucun réseau Wi-Fi local détecté : connectez le téléphone au Wi-Fi de la Livebox.")
+        }
+        val found = LocalNetwork.scan(hosts) { client.probe(it, timeoutMs = if (given != null) 2000 else 800) }
         if (found.isEmpty()) {
+            val range = hosts.map { it.substringBeforeLast('.') }.distinct().joinToString { "$it.x" }
             return ToolResult.error(
-                "Aucun décodeur Orange trouvé. Vérifiez qu'il est allumé et que le téléphone est sur le même Wi-Fi que la Livebox.",
+                "Aucun décodeur Orange trouvé (${hosts.size} adresses testées sur $range, port ${client.port}). " +
+                    "Vérifiez qu'il est allumé et sur le même réseau que le téléphone.",
             )
         }
         settings.set(DECODER_ADDRESS_KEY, found.first())

@@ -34,6 +34,15 @@ class AndroidIrTransmitter(context: Context) : IrTransmitter {
         val ir = manager?.takeIf { it.hasIrEmitter() } ?: error("Aucun émetteur infrarouge sur ce téléphone.")
         ir.transmit(signal.carrierFrequencyHz, signal.pattern)
     }
+
+    /** « disponible (30–60 kHz) » : utile pour vérifier que la fréquence de la TV est acceptée. */
+    fun describe(): String {
+        val ir = manager ?: return "absent (service introuvable)"
+        if (!ir.hasIrEmitter()) return "absent"
+        val ranges = runCatching { ir.carrierFrequencies }.getOrNull()
+            ?.joinToString { "${it.minFrequency / 1000}–${it.maxFrequency / 1000} kHz" }
+        return "disponible" + (ranges?.takeIf { it.isNotEmpty() }?.let { " ($it)" } ?: "")
+    }
 }
 
 object DeviceStatus {
@@ -45,7 +54,7 @@ object DeviceStatus {
             "Appareil" to "${Build.MANUFACTURER} ${Build.MODEL}",
             "Android" to "${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})",
             "Batterie" to "${level ?: "?"} %" + if (charging) " (en charge)" else "",
-            "Infrarouge" to if (AndroidIrTransmitter(context).isAvailable) "disponible" else "absent",
+            "Infrarouge" to AndroidIrTransmitter(context).describe(),
             "Adresses réseau" to localAddresses().joinToString { "${it.second} (${it.first})" }.ifEmpty { "aucune" },
             "Pont avec Claude" to if (runtime.isBridgeRunning) "actif" else "arrêté",
             "Arrêt d'urgence" to if (runtime.emergencyStop.engaged) "ENGAGÉ" else "non",
