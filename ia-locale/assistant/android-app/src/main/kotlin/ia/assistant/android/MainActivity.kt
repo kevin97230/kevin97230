@@ -6,18 +6,23 @@ import android.app.AlertDialog
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.pm.PackageManager
-import android.graphics.Color
-import android.graphics.Typeface
 import android.os.Build
 import android.os.Bundle
+import android.view.Gravity
 import android.view.View
 import android.view.WindowInsets
-import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
-import android.widget.Toast
+import ia.assistant.android.ui.ButtonStyle
+import ia.assistant.android.ui.Palette
+import ia.assistant.android.ui.Ui
+import ia.assistant.android.ui.remote
+import ia.assistant.android.ui.setChip
+import ia.assistant.core.audit.AuditOutcome
 import ia.assistant.core.bridge.McpHttpServer
+import ia.assistant.core.network.OrangeKeys
+import ia.assistant.core.tools.ToolResult
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -26,17 +31,21 @@ import java.util.Date
 import java.util.Locale
 
 /**
- * Écran principal : pont avec Claude, arrêt d'urgence, télécommande infrarouge et journal de bord.
- * Interface volontairement simple (vues Android standard) ; elle sera enrichie plus tard.
+ * Écran principal : état, télécommandes (TV, décodeur), pont avec Claude, sécurité et journal.
  */
 class MainActivity : Activity() {
     private val app get() = application as AssistantApp
     private val runtime get() = app.runtime
+    private lateinit var ui: Ui
 
-    private lateinit var statusView: TextView
-    private lateinit var bridgeButton: Button
-    private lateinit var emergencyButton: Button
-    private lateinit var journalView: TextView
+    private lateinit var bridgeChip: TextView
+    private lateinit var irChip: TextView
+    private lateinit var safetyChip: TextView
+    private lateinit var resultBanner: TextView
+    private lateinit var bridgeStatus: TextView
+    private lateinit var bridgeButton: TextView
+    private lateinit var emergencyButton: TextView
+    private lateinit var journalList: LinearLayout
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -45,6 +54,8 @@ class MainActivity : Activity() {
         ) {
             requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 1)
         }
+        ui = Ui(this)
+        window.decorView.setBackgroundColor(Palette.BACKGROUND)
         setContentView(buildUi())
     }
 
@@ -54,85 +65,90 @@ class MainActivity : Activity() {
     }
 
     private fun buildUi(): View {
-        val column = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(16), dp(16), dp(16), dp(32))
+        val column = ui.vertical().apply { setPadding(ui.dp(16), ui.dp(20), ui.dp(16), ui.dp(32)) }
+
+        // --- En-tête ---
+        column.addView(ui.text("Assistant", Palette.TEXT, 30f, bold = true))
+        column.addView(ui.text("Votre IA personnelle · ${Build.MODEL}", Palette.MUTED, 13f))
+        bridgeChip = ui.chip("Pont", Palette.MUTED)
+        irChip = ui.chip("Infrarouge", Palette.MUTED)
+        safetyChip = ui.chip("Sécurité", Palette.MUTED)
+        column.addView(ui.horizontal().apply {
+            setPadding(0, ui.dp(14), 0, ui.dp(14))
+            listOf(bridgeChip, irChip, safetyChip).forEachIndexed { i, chip ->
+                addView(chip, LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+                    if (i > 0) marginStart = ui.dp(8)
+                })
+            }
+        })
+
+        // Résultat de la dernière action.
+        resultBanner = ui.text("", Palette.TEXT, 14f).apply {
+            visibility = View.GONE
+            setPadding(ui.dp(14), ui.dp(12), ui.dp(14), ui.dp(12))
+            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+                .apply { bottomMargin = ui.dp(14) }
         }
+        column.addView(resultBanner)
 
-        column.addView(title("Assistant — IA personnelle", 24f))
-
-        // --- Pont avec Claude ---
-        column.addView(title("Pont avec Claude", 18f))
-        statusView = TextView(this).apply { textSize = 14f }
-        column.addView(statusView)
-        bridgeButton = button("") {
-            val action = if (runtime.isBridgeRunning) BridgeService.ACTION_STOP else BridgeService.ACTION_START
-            startForegroundService(BridgeService.intent(this, action))
-            statusView.postDelayed({ refresh() }, 800)
-        }
-        column.addView(bridgeButton)
-        column.addView(button("Copier la commande pour Claude (ordinateur)") { copyClaudeCommand() })
-        column.addView(button("Nouveau jeton (révoque l'ancien)") { confirmNewToken() })
-        column.addView(button("Diagnostic du téléphone") { showDiagnostic() })
-
-        // --- Sécurité ---
-        column.addView(title("Sécurité", 18f))
-        emergencyButton = button("") { toggleEmergency() }
-        column.addView(emergencyButton)
-
-        // --- Télécommande infrarouge ---
-        column.addView(title("Télécommande infrarouge", 18f))
-        if (!AndroidIrTransmitter(this).isAvailable) {
-            column.addView(TextView(this).apply { text = "⚠️ Aucun émetteur infrarouge détecté sur ce téléphone." })
-        }
+        // --- Télécommandes infrarouges ---
         val devices = runCatching { app.loadIrLibrary().devices }.getOrElse { e ->
-            column.addView(TextView(this).apply { text = "⚠️ Fichier appareils.json invalide : ${e.message}" })
+            column.addView(ui.card("Télécommande", "⚠️ Fichier appareils.json invalide : ${e.message}"))
             emptyList()
         }
         devices.forEach { device ->
-            column.addView(TextView(this).apply {
-                text = "${device.name} (${device.brand})"
-                setTypeface(null, Typeface.BOLD)
-                setPadding(0, dp(8), 0, 0)
+            column.addView(ui.card(device.name, "Infrarouge · pointez le haut du téléphone vers l'appareil").apply {
+                addView(ui.remote(device.buttons.keys) { key ->
+                    runTool("ir_envoyer_touche", buildJsonObject {
+                        put("appareil", device.id)
+                        put("touche", key)
+                    })
+                })
             })
-            device.buttons.keys.chunked(3).forEach { row ->
-                val line = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-                row.forEach { key ->
-                    line.addView(
-                        button(key.replace('_', ' ')) { sendIr(device.id, key) },
-                        LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f),
-                    )
-                }
-                column.addView(line)
-            }
         }
 
-        // --- Décodeur Orange (par le Wi-Fi) ---
-        column.addView(title("Décodeur TV Orange (Wi-Fi)", 18f))
-        column.addView(button("Rechercher le décodeur sur le Wi-Fi") {
-            runTool("decodeur_rechercher", buildJsonObject {})
+        // --- Décodeur Orange ---
+        column.addView(ui.card("Décodeur TV Orange", "Wi-Fi · pas besoin de viser").apply {
+            addView(ui.button("🔍  Rechercher le décodeur", ButtonStyle.SOFT) {
+                runTool("decodeur_rechercher", buildJsonObject {})
+            })
+            addView(ui.remote(OrangeKeys.CODES.keys) { key ->
+                runTool("decodeur_touche", buildJsonObject { put("touche", key) })
+            })
         })
-        listOf("allumer", "chaine_suivante", "chaine_precedente", "volume_plus", "volume_moins", "muet", "ok", "retour", "menu")
-            .chunked(3).forEach { row ->
-                val line = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-                row.forEach { key ->
-                    line.addView(
-                        button(key.replace('_', ' ')) { runTool("decodeur_touche", buildJsonObject { put("touche", key) }) },
-                        LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f),
-                    )
-                }
-                column.addView(line)
+
+        // --- Pont avec Claude ---
+        column.addView(ui.card("Pont avec Claude", "Claude sur l'ordinateur pilote le téléphone").apply {
+            bridgeStatus = ui.text("", Palette.MUTED, 13f).apply { setPadding(0, 0, 0, ui.dp(10)) }
+            addView(bridgeStatus)
+            bridgeButton = ui.button("", ButtonStyle.PRIMARY) {
+                val action = if (runtime.isBridgeRunning) BridgeService.ACTION_STOP else BridgeService.ACTION_START
+                startForegroundService(BridgeService.intent(this@MainActivity, action))
+                bridgeButton.postDelayed({ refresh() }, 800)
             }
+            addView(bridgeButton)
+            addView(ui.row(listOf(
+                ui.button("Copier la commande") { copyClaudeCommand() },
+                ui.button("Diagnostic") { showDiagnostic() },
+            )))
+            addView(ui.row(listOf(ui.button("Nouveau jeton", ButtonStyle.SECONDARY, heightDp = 44) { confirmNewToken() })))
+        })
+
+        // --- Sécurité ---
+        column.addView(ui.card("Sécurité", "Fige immédiatement toutes les actions de l'IA").apply {
+            emergencyButton = ui.button("", ButtonStyle.DANGER, heightDp = 56) { toggleEmergency() }
+            addView(emergencyButton)
+        })
 
         // --- Journal ---
-        column.addView(title("Journal de bord", 18f))
-        journalView = TextView(this).apply {
-            textSize = 12f
-            typeface = Typeface.MONOSPACE
-        }
-        column.addView(journalView)
+        column.addView(ui.card("Journal de bord", "Les dernières actions et leur résultat").apply {
+            journalList = ui.vertical()
+            addView(journalList)
+        })
 
         return ScrollView(this).apply {
+            setBackgroundColor(Palette.BACKGROUND)
+            isVerticalScrollBarEnabled = false
             addView(column)
             setOnApplyWindowInsetsListener { v, insets ->
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
@@ -145,33 +161,31 @@ class MainActivity : Activity() {
         }
     }
 
-    private fun sendIr(deviceId: String, button: String) = runTool(
-        "ir_envoyer_touche",
-        buildJsonObject {
-            put("appareil", deviceId)
-            put("touche", button)
-        },
-    )
-
     /** Exécute un outil en tant que propriétaire, hors du fil de l'interface (réseau, infrarouge). */
     private fun runTool(name: String, args: JsonObject) {
         Thread {
             val result = runtime.executor.call(AssistantApp.LOCAL_OWNER, name, args)
             runOnUiThread {
-                Toast.makeText(this, result.text, Toast.LENGTH_SHORT).show()
+                showResult(result)
                 refresh()
             }
         }.start()
     }
 
-    /** Affiche l'état du téléphone (infrarouge, réseau…) pour aider au dépannage. */
+    private fun showResult(result: ToolResult) {
+        resultBanner.visibility = View.VISIBLE
+        resultBanner.text = (if (result.isError) "⚠️  " else "✓  ") + result.text
+        resultBanner.setTextColor(if (result.isError) Palette.DANGER else Palette.TEXT)
+        resultBanner.background = ui.rounded(
+            if (result.isError) Palette.DANGER_SOFT else Palette.SURFACE,
+            16,
+            strokeColor = if (result.isError) Palette.DANGER else Palette.SUCCESS,
+        )
+    }
+
     private fun showDiagnostic() {
         val text = DeviceStatus.read(this, runtime).entries.joinToString("\n") { (k, v) -> "$k : $v" }
-        AlertDialog.Builder(this)
-            .setTitle("Diagnostic")
-            .setMessage(text)
-            .setPositiveButton("OK", null)
-            .show()
+        AlertDialog.Builder(this).setTitle("Diagnostic").setMessage(text).setPositiveButton("OK", null).show()
     }
 
     private fun toggleEmergency() {
@@ -195,14 +209,14 @@ class MainActivity : Activity() {
     private fun copyClaudeCommand() {
         val address = DeviceStatus.localAddresses().firstOrNull()?.second
         if (address == null) {
-            Toast.makeText(this, "Pas de réseau : connectez le téléphone au Wi-Fi.", Toast.LENGTH_LONG).show()
+            showResult(ToolResult.error("Pas de réseau : connectez le téléphone au Wi-Fi."))
             return
         }
         val command = "claude mcp add --transport http assistant-telephone " +
             "http://$address:${McpHttpServer.DEFAULT_PORT}${McpHttpServer.PATH} " +
             "--header \"Authorization: Bearer ${app.ownerToken()}\""
         getSystemService(ClipboardManager::class.java).setPrimaryClip(ClipData.newPlainText("Commande Claude", command))
-        Toast.makeText(this, "Commande copiée. Collez-la dans un terminal de l'ordinateur.", Toast.LENGTH_LONG).show()
+        showResult(ToolResult.ok("Commande copiée. Collez-la dans PowerShell sur l'ordinateur."))
     }
 
     private fun confirmNewToken() {
@@ -211,7 +225,7 @@ class MainActivity : Activity() {
             .setMessage("L'ordinateur actuellement connecté perdra l'accès. Il faudra recopier la commande.")
             .setPositiveButton("Oui") { _, _ ->
                 app.regenerateToken()
-                Toast.makeText(this, "Nouveau jeton créé.", Toast.LENGTH_SHORT).show()
+                showResult(ToolResult.ok("Nouveau jeton créé."))
             }
             .setNegativeButton("Annuler", null)
             .show()
@@ -219,36 +233,42 @@ class MainActivity : Activity() {
 
     private fun refresh() {
         val running = runtime.isBridgeRunning
+        val engaged = runtime.emergencyStop.engaged
+        val irOk = AndroidIrTransmitter(this).isAvailable
+
+        bridgeChip.setChip(if (running) "Pont actif" else "Pont arrêté", if (running) Palette.SUCCESS else Palette.MUTED)
+        irChip.setChip(if (irOk) "Infrarouge" else "Pas d'infrarouge", if (irOk) Palette.SUCCESS else Palette.WARNING)
+        safetyChip.setChip(if (engaged) "Arrêt d'urgence" else "Sécurité OK", if (engaged) Palette.DANGER else Palette.SUCCESS)
+
         val addresses = DeviceStatus.localAddresses()
-        statusView.text = if (running) {
-            "✅ Actif. Adresse(s) : " + addresses.joinToString { "http://${it.second}:${McpHttpServer.DEFAULT_PORT}${McpHttpServer.PATH}" }
+        bridgeStatus.text = if (running) {
+            "Actif sur " + addresses.joinToString { "${it.second}:${McpHttpServer.DEFAULT_PORT}" }.ifEmpty { "(pas de réseau)" }
         } else {
-            "⏹ Arrêté."
+            "Arrêté. Démarrez-le pour que Claude puisse joindre le téléphone."
         }
         bridgeButton.text = if (running) "Arrêter le pont" else "Démarrer le pont"
 
-        val engaged = runtime.emergencyStop.engaged
-        emergencyButton.text = if (engaged) "Lever l'arrêt d'urgence" else "⛔ ARRÊT D'URGENCE"
-        emergencyButton.setTextColor(if (engaged) Color.BLACK else Color.RED)
+        emergencyButton.text = if (engaged) "Lever l'arrêt d'urgence" else "⛔  ARRÊT D'URGENCE"
 
-        val format = SimpleDateFormat("dd/MM HH:mm:ss", Locale.FRANCE)
-        journalView.text = runtime.audit.recent(15).reversed().joinToString("\n") {
-            "${format.format(Date(it.timestampMillis))} · ${it.tool} · ${it.outcome}\n   → ${it.detail.take(200)}"
-        }.ifEmpty { "(vide)" }
+        journalList.removeAllViews()
+        val format = SimpleDateFormat("HH:mm:ss", Locale.FRANCE)
+        val entries = runtime.audit.recent(12).reversed()
+        if (entries.isEmpty()) {
+            journalList.addView(ui.text("Aucune action pour l'instant.", Palette.MUTED, 13f))
+        }
+        entries.forEach { entry ->
+            val ok = entry.outcome == AuditOutcome.EXECUTED
+            journalList.addView(ui.horizontal().apply {
+                gravity = Gravity.TOP
+                setPadding(0, ui.dp(6), 0, ui.dp(6))
+                addView(ui.text("●", if (ok) Palette.SUCCESS else Palette.DANGER, 12f).apply {
+                    setPadding(0, ui.dp(2), ui.dp(10), 0)
+                })
+                addView(ui.vertical().apply {
+                    addView(ui.text("${format.format(Date(entry.timestampMillis))}  ·  ${entry.tool}", Palette.TEXT, 13f, bold = true))
+                    addView(ui.text(entry.detail.take(160), Palette.MUTED, 12.5f))
+                }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+            })
+        }
     }
-
-    private fun title(text: String, size: Float) = TextView(this).apply {
-        this.text = text
-        textSize = size
-        setTypeface(null, Typeface.BOLD)
-        setPadding(0, dp(16), 0, dp(4))
-    }
-
-    private fun button(label: String, onClick: () -> Unit) = Button(this).apply {
-        text = label
-        isAllCaps = false
-        setOnClickListener { onClick() }
-    }
-
-    private fun dp(value: Int) = (value * resources.displayMetrics.density).toInt()
 }

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Icône : une étincelle (l'IA) au centre d'un anneau (la maison connectée). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#7B8CFF"
+        android:strokeWidth="4"
+        android:pathData="M54,30 A24,24 0 1,1 53.99,30 Z" />
+    <path
+        android:fillColor="#EDEFF3"
+        android:pathData="M54,38 C55.5,47 57,50.5 66,54 C57,57.5 55.5,61 54,70 C52.5,61 51,57.5 42,54 C51,50.5 52.5,47 54,38 Z" />
+</vector>
