@@ -66,3 +66,20 @@ object LocalNetwork {
         InetAddress.getByName(host) // adresse littérale : aucune résolution DNS
     }
 }
+
+/** Réglages enregistrés dans un fichier (pour le simulateur sur ordinateur). */
+class FileSettings(private val file: java.io.File) : SettingsStore {
+    private val props = java.util.Properties().apply {
+        if (file.exists()) file.inputStream().use { load(it) }
+    }
+
+    @Synchronized
+    override fun get(key: String): String? = props.getProperty(key)
+
+    @Synchronized
+    override fun set(key: String, value: String) {
+        props.setProperty(key, value)
+        file.parentFile?.mkdirs()
+        file.outputStream().use { props.store(it, "Réglages de l'assistant") }
+    }
+}

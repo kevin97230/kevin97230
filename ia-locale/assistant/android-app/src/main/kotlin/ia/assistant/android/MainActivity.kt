@@ -11,6 +11,8 @@ import android.os.Bundle
 import android.view.Gravity
 import android.view.View
 import android.view.WindowInsets
+import android.text.InputFilter
+import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
@@ -19,6 +21,7 @@ import ia.assistant.android.ui.Palette
 import ia.assistant.android.ui.Ui
 import ia.assistant.android.ui.remote
 import ia.assistant.android.ui.setChip
+import ia.assistant.core.androidtv.AndroidTvKeys
 import ia.assistant.core.audit.AuditOutcome
 import ia.assistant.core.bridge.McpHttpServer
 import ia.assistant.core.network.OrangeKeys
@@ -91,6 +94,22 @@ class MainActivity : Activity() {
         }
         column.addView(resultBanner)
 
+        // --- TV Android par le Wi-Fi ---
+        column.addView(ui.card("TV Panasonic (Wi-Fi)", "Android TV · pas besoin de viser").apply {
+            addView(ui.row(listOf(
+                ui.button("🔍  Rechercher", ButtonStyle.SOFT) { runTool("tv_rechercher", buildJsonObject {}) },
+                ui.button("🔗  Appairer", ButtonStyle.SOFT) { startTvPairing() },
+            )))
+            val tvKeys = AndroidTvKeys.CODES.keys + listOf("netflix", "youtube", "prime_video")
+            addView(ui.remote(tvKeys) { key ->
+                if (key in AndroidTvKeys.APPS) {
+                    runTool("tv_ouvrir_app", buildJsonObject { put("app", key) })
+                } else {
+                    runTool("tv_touche", buildJsonObject { put("touche", key) })
+                }
+            })
+        })
+
         // --- Télécommandes infrarouges ---
         val devices = runCatching { app.loadIrLibrary().devices }.getOrElse { e ->
             column.addView(ui.card("Télécommande", "⚠️ Fichier appareils.json invalide : ${e.message}"))
@@ -162,14 +181,37 @@ class MainActivity : Activity() {
     }
 
     /** Exécute un outil en tant que propriétaire, hors du fil de l'interface (réseau, infrarouge). */
-    private fun runTool(name: String, args: JsonObject) {
+    private fun runTool(name: String, args: JsonObject, onDone: (ToolResult) -> Unit = {}) {
         Thread {
             val result = runtime.executor.call(AssistantApp.LOCAL_OWNER, name, args)
             runOnUiThread {
                 showResult(result)
                 refresh()
+                onDone(result)
             }
         }.start()
+    }
+
+    /** Appairage : la TV affiche un code, que l'on saisit ici. */
+    private fun startTvPairing() {
+        runTool("tv_appairer", buildJsonObject {}) { started ->
+            if (started.isError) return@runTool
+            val input = EditText(this).apply {
+                hint = "Ex. 4F2A9C"
+                isSingleLine = true
+                filters = arrayOf(InputFilter.AllCaps(), InputFilter.LengthFilter(6))
+                setPadding(ui.dp(20), ui.dp(16), ui.dp(20), ui.dp(16))
+            }
+            AlertDialog.Builder(this)
+                .setTitle("Code affiché sur la TV")
+                .setMessage("Saisissez les 6 caractères qui s'affichent sur l'écran de la TV.")
+                .setView(input)
+                .setPositiveButton("Valider") { _, _ ->
+                    runTool("tv_code", buildJsonObject { put("code", input.text.toString()) })
+                }
+                .setNegativeButton("Annuler", null)
+                .show()
+        }
     }
 
     private fun showResult(result: ToolResult) {

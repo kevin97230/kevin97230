@@ -1,5 +1,11 @@
 package ia.assistant.core
 
+import ia.assistant.core.androidtv.AndroidTvService
+import ia.assistant.core.androidtv.TvAppTool
+import ia.assistant.core.androidtv.TvCodeTool
+import ia.assistant.core.androidtv.TvFindTool
+import ia.assistant.core.androidtv.TvKeyTool
+import ia.assistant.core.androidtv.TvPairTool
 import ia.assistant.core.audit.AuditLog
 import ia.assistant.core.bridge.McpHttpServer
 import ia.assistant.core.bridge.McpServer
@@ -48,7 +54,15 @@ class AssistantRuntime(private val platform: PlatformServices) {
     val policy = SecurityPolicy(emergencyStop)
     val audit: AuditLog get() = platform.audit
 
+    /** TV Android pilotée par le Wi-Fi (appairage, touches, applications). */
+    val androidTv = AndroidTvService(platform.settings)
+
     val registry: ToolRegistry = ToolRegistry()
+        .register(TvFindTool(androidTv, platform.neighbourHosts))
+        .register(TvPairTool(androidTv))
+        .register(TvCodeTool(androidTv))
+        .register(TvKeyTool(androidTv))
+        .register(TvAppTool(androidTv))
         .register(IrListDevicesTool(platform.irLibrary))
         .register(IrSendButtonTool(platform.irLibrary, platform.irTransmitter))
         .register(OrangeDecoderFindTool(platform.settings, platform.orangeDecoder, platform.neighbourHosts))

@@ -10,6 +10,7 @@ Première brique du projet décrit dans [`../VISION.md`](../VISION.md).
 | 📒 **Journal de bord** | Chaque action est enregistrée : qui, quoi, quand, résultat |
 | 🌉 **Pont avec Claude** | Le téléphone expose ses fonctions à Claude via **MCP** (`http://<ip>:8765/mcp`), protégé par un jeton secret |
 | 📡 **Télécommande infrarouge** | Votre **TV Panasonic** préconfigurée (38 touches, dont Netflix, YouTube, Prime Video). Protocoles **Kaseikyo** (Panasonic), **NEC** (LG, beaucoup de décodeurs et ventilateurs) et **Samsung** |
+| 📺 **TV Android par le Wi-Fi** | Votre TV Panasonic (Android TV) pilotée **sans viser** : appairage unique avec un code affiché sur la TV, toutes les touches, ouverture directe de Netflix, YouTube, Prime Video |
 | 📺 **Décodeur TV Orange** | Par le **Wi-Fi** (pas besoin de viser) : recherche automatique, touches, changement de chaîne par numéro, état allumé/veille |
 | 🔔 **Notifications** | Claude peut vous envoyer un message sur le téléphone |
 | 📱 **État du téléphone** | Batterie, modèle, réseau, infrarouge |
@@ -20,6 +21,10 @@ Première brique du projet décrit dans [`../VISION.md`](../VISION.md).
 |---|---|
 | `ir_lister_appareils` | Liste les appareils et leurs touches |
 | `ir_envoyer_touche` | Appuie sur une touche (`appareil`, `touche`, `repetitions`) |
+| `tv_rechercher` | Trouve la TV Android sur le Wi-Fi |
+| `tv_appairer` puis `tv_code` | Appairage unique : la TV affiche un code à 6 caractères |
+| `tv_touche` | Touche de la TV par le Wi-Fi (`touche`, `repetitions`) |
+| `tv_ouvrir_app` | Ouvre Netflix, YouTube, Prime Video, Disney+ |
 | `decodeur_rechercher` | Trouve le décodeur Orange sur le Wi-Fi et retient son adresse |
 | `decodeur_touche` | Appuie sur une touche du décodeur (`touche`, `repetitions`) |
 | `decodeur_chaine` | Met une chaîne par son numéro (`numero`) |
@@ -89,6 +94,21 @@ Les codes de milliers d'appareils sont publiés dans la base libre **Flipper-IRD
 > Les climatiseurs utilisent des protocoles plus longs (l'état complet est envoyé à chaque appui) :
 > ils arriveront dans une prochaine étape, avec le Wi-Fi et le Bluetooth.
 
+## La TV Android par le Wi-Fi
+
+La TV Panasonic est une Android TV : elle se pilote par le Wi-Fi avec le même protocole que l'appli Google TV.
+1. Dans l'appli, carte **TV Panasonic (Wi-Fi)** : **Rechercher**, puis **Appairer**.
+2. Un code à 6 caractères s'affiche sur la TV : saisissez-le. C'est fait une seule fois.
+
+Depuis l'ordinateur (même Wi-Fi), le simulateur sait aussi le faire :
+
+```powershell
+.\simulator\build\install\simulator\bin\simulator.bat tv rechercher
+.\simulator\build\install\simulator\bin\simulator.bat tv appairer
+.\simulator\build\install\simulator\bin\simulator.bat tv touche volume_plus 3
+.\simulator\build\install\simulator\bin\simulator.bat tv app youtube
+```
+
 ## Le décodeur Orange
 
 Le décodeur se pilote par le Wi-Fi grâce à son API locale (port 8080). Le téléphone doit être sur le Wi-Fi
@@ -118,4 +138,4 @@ En place :
 ./gradlew test
 ```
 
-22 tests couvrent la sécurité, l'encodage infrarouge, le protocole MCP et le transport HTTP (jeton, refus des navigateurs).
+25 tests couvrent la sécurité, l'encodage infrarouge, le protocole MCP et le transport HTTP (jeton, refus des navigateurs).
