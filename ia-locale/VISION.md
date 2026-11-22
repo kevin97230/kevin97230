@@ -218,7 +218,15 @@ règles qui évoluent à mesure qu'ils grandissent.
 
 La sécurité (module 6) n'est pas une phase : elle est intégrée **dès la phase 0** et renforcée à chaque étape.
 
-## 6. Choix techniques envisagés
+## 6. État d'avancement
+
+- ✅ **Phase 0** (en partie) : registre d'outils, modèle de sécurité (rôles, autorisations, validation, arrêt d'urgence), journal de bord
+- ✅ **Phase 1** : pont MCP téléphone ↔ Claude (testé avec Claude Code via le simulateur)
+- 🟡 **Phase 2** : télécommande infrarouge (NEC, Samsung) ; Wi-Fi, Bluetooth et climatiseurs à venir
+
+Code et guide d'installation : [`assistant/`](assistant/README.md).
+
+## 7. Choix techniques envisagés
 
 | Besoin | Piste |
 |---|---|
@@ -231,9 +239,9 @@ La sécurité (module 6) n'est pas une phase : elle est intégrée **dès la pha
 | Maison | API ConsumerIr (infrarouge), Bluetooth HID / BLE, API réseau des appareils, Home Assistant |
 | Trading | API du courtier (compte démo) |
 
-## 7. Informations à compléter
+## 8. Informations à compléter
 
-- [ ] Modèle exact du téléphone (Paramètres → À propos du téléphone)
+- [x] Téléphone : REDMI Note 15 Pro+ 5G, Android 16, HyperOS 3
 - [ ] Système de l'ordinateur (Windows / Mac / Linux)
 - [ ] TV : marque, modèle, Android TV / Google TV ou non
 - [ ] Décodeur : opérateur

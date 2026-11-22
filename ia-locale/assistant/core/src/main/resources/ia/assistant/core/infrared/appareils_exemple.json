@@ -1,0 +1,35 @@
+{
+  "_note": "Exemples à vérifier sur vos appareils. Codes issus des protocoles publics NEC (LG) et Samsung32 (Samsung).",
+  "appareils": [
+    {
+      "id": "tv_lg",
+      "nom": "TV LG (exemple)",
+      "marque": "LG",
+      "protocole": "NEC",
+      "adresse": "0x04",
+      "touches": {
+        "allumer": "0x08",
+        "volume_plus": "0x02",
+        "volume_moins": "0x03",
+        "chaine_suivante": "0x00",
+        "chaine_precedente": "0x01",
+        "muet": "0x09"
+      }
+    },
+    {
+      "id": "tv_samsung",
+      "nom": "TV Samsung (exemple)",
+      "marque": "Samsung",
+      "protocole": "SAMSUNG32",
+      "adresse": "0x07",
+      "touches": {
+        "allumer": "0x02",
+        "volume_plus": "0x07",
+        "volume_moins": "0x0B",
+        "chaine_suivante": "0x12",
+        "chaine_precedente": "0x10",
+        "muet": "0x0F"
+      }
+    }
+  ]
+}
