@@ -1,34 +1,52 @@
 {
-  "_note": "Exemples à vérifier sur vos appareils. Codes issus des protocoles publics NEC (LG) et Samsung32 (Samsung).",
+  "_note": "Codes Panasonic (protocole Kaseikyo) issus de la base libre Flipper-IRDB, communs à la plupart des télécommandes Panasonic récentes.",
   "appareils": [
     {
-      "id": "tv_lg",
-      "nom": "TV LG (exemple)",
-      "marque": "LG",
-      "protocole": "NEC",
-      "adresse": "0x04",
+      "id": "tv_salon",
+      "nom": "TV Panasonic du salon",
+      "marque": "Panasonic",
+      "protocole": "KASEIKYO",
+      "adresse": "80 02 20 00",
       "touches": {
-        "allumer": "0x08",
-        "volume_plus": "0x02",
-        "volume_moins": "0x03",
-        "chaine_suivante": "0x00",
-        "chaine_precedente": "0x01",
-        "muet": "0x09"
-      }
-    },
-    {
-      "id": "tv_samsung",
-      "nom": "TV Samsung (exemple)",
-      "marque": "Samsung",
-      "protocole": "SAMSUNG32",
-      "adresse": "0x07",
-      "touches": {
-        "allumer": "0x02",
-        "volume_plus": "0x07",
-        "volume_moins": "0x0B",
-        "chaine_suivante": "0x12",
-        "chaine_precedente": "0x10",
-        "muet": "0x0F"
+        "allumer": "D0 03 00 00",
+        "volume_plus": "00 02 00 00",
+        "volume_moins": "10 02 00 00",
+        "muet": "20 03 00 00",
+        "chaine_suivante": "40 03 00 00",
+        "chaine_precedente": "50 03 00 00",
+        "source": "50 00 00 00",
+        "tv": { "adresse": "82 02 20 00", "commande": "00 03 00 00" },
+        "infos": "90 03 00 00",
+
+        "haut": { "adresse": "80 02 20 01", "commande": "A0 00 00 00" },
+        "bas": { "adresse": "80 02 20 01", "commande": "B0 00 00 00" },
+        "gauche": { "adresse": "80 02 20 01", "commande": "E0 00 00 00" },
+        "droite": { "adresse": "80 02 20 01", "commande": "F0 00 00 00" },
+        "ok": { "adresse": "80 02 20 01", "commande": "90 00 00 00" },
+        "menu": { "adresse": "80 02 20 01", "commande": "20 01 00 00" },
+        "retour": { "adresse": "80 02 20 03", "commande": "40 01 00 00" },
+        "quitter": { "adresse": "80 02 20 03", "commande": "30 01 00 00" },
+        "accueil": { "adresse": "89 02 20 02", "commande": "50 01 00 00" },
+        "applications": { "adresse": "89 02 20 02", "commande": "F0 00 00 00" },
+        "guide": { "adresse": "89 02 20 02", "commande": "70 00 00 00" },
+
+        "netflix": { "adresse": "89 02 20 03", "commande": "20 03 00 00" },
+        "youtube": { "adresse": "89 02 20 03", "commande": "C0 02 00 00" },
+        "prime_video": { "adresse": "89 02 20 03", "commande": "D0 02 00 00" },
+        "lecture": { "adresse": "89 02 20 03", "commande": "00 00 00 00" },
+        "pause": { "adresse": "89 02 20 03", "commande": "10 00 00 00" },
+        "stop": { "adresse": "89 02 20 03", "commande": "20 00 00 00" },
+
+        "chiffre_0": "90 01 00 00",
+        "chiffre_1": "00 01 00 00",
+        "chiffre_2": "10 01 00 00",
+        "chiffre_3": "20 01 00 00",
+        "chiffre_4": "30 01 00 00",
+        "chiffre_5": "40 01 00 00",
+        "chiffre_6": "50 01 00 00",
+        "chiffre_7": "60 01 00 00",
+        "chiffre_8": "70 01 00 00",
+        "chiffre_9": "80 01 00 00"
       }
     }
   ]

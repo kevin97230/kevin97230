@@ -9,7 +9,7 @@ Première brique du projet décrit dans [`../VISION.md`](../VISION.md).
 | 🔐 **Sécurité** | Rôles (propriétaire, confiance, enfant, invité, inconnu), autorisations appareil par appareil, validation du propriétaire pour les actions critiques, accès temporaires, **arrêt d'urgence** (engageable à distance, levable **uniquement sur le téléphone**) |
 | 📒 **Journal de bord** | Chaque action est enregistrée : qui, quoi, quand, résultat |
 | 🌉 **Pont avec Claude** | Le téléphone expose ses fonctions à Claude via **MCP** (`http://<ip>:8765/mcp`), protégé par un jeton secret |
-| 📡 **Télécommande infrarouge** | Protocoles **NEC** (LG, beaucoup de décodeurs et ventilateurs) et **Samsung**, depuis l'émetteur IR du Redmi |
+| 📡 **Télécommande infrarouge** | Votre **TV Panasonic** préconfigurée (38 touches, dont Netflix, YouTube, Prime Video). Protocoles **Kaseikyo** (Panasonic), **NEC** (LG, beaucoup de décodeurs et ventilateurs) et **Samsung** |
 | 🔔 **Notifications** | Claude peut vous envoyer un message sur le téléphone |
 | 📱 **État du téléphone** | Batterie, modèle, réseau, infrarouge |
 
@@ -44,7 +44,7 @@ simulator/build/install/simulator/bin/simulator
 ```
 
 Le simulateur affiche une commande `claude mcp add …`. Copiez-la dans un autre terminal, lancez `claude`,
-puis demandez par exemple : *« Liste les appareils infrarouges et monte le volume de la TV LG de 3 crans. »*
+puis demandez par exemple : *« Liste les appareils infrarouges et monte le volume de la TV du salon de 3 crans. »*
 Les signaux infrarouges s'affichent dans la console du simulateur.
 
 ## Essai 2 — sur le téléphone
@@ -70,9 +70,11 @@ sur les deux. L'appli affiche alors aussi l'adresse Tailscale (elle commence par
 Créez un fichier `appareils.json` au format de
 [`appareils_exemple.json`](core/src/main/resources/ia/assistant/core/infrared/appareils_exemple.json) et placez-le
 dans le dossier de l'application (*Android Studio → Device Explorer → `/data/data/ia.assistant.android/files/`*).
-Les codes de milliers d'appareils sont publiés dans des bases libres comme **Flipper-IRDB** et **IRDB**.
+Les codes de milliers d'appareils sont publiés dans la base libre **Flipper-IRDB** : les lignes `address:` et
+`command:` de ses fichiers `.ir` se copient telles quelles (ex. `"80 02 20 00"`).
 
-> Les codes fournis (TV LG et Samsung) sont des exemples issus des protocoles publics : à vérifier sur vos appareils.
+> Les codes Panasonic fournis viennent de Flipper-IRDB et sont communs à la plupart des télécommandes Panasonic
+> récentes. Testez d'abord `allumer` et `volume_plus` : si une touche ne réagit pas, signalez-le pour qu'on l'ajuste.
 > Les climatiseurs utilisent des protocoles plus longs (l'état complet est envoyé à chaque appui) :
 > ils arriveront dans une prochaine étape, avec le Wi-Fi et le Bluetooth.
 
@@ -96,4 +98,4 @@ En place :
 ./gradlew test
 ```
 
-17 tests couvrent la sécurité, l'encodage infrarouge, le protocole MCP et le transport HTTP (jeton, refus des navigateurs).
+19 tests couvrent la sécurité, l'encodage infrarouge, le protocole MCP et le transport HTTP (jeton, refus des navigateurs).

@@ -71,7 +71,7 @@ class BridgeTest {
 
     @Test
     fun `envoi d'une touche infrarouge par Claude`() {
-        val result = call("ir_envoyer_touche", """{"appareil":"tv_lg","touche":"volume_plus","repetitions":3}""")
+        val result = call("ir_envoyer_touche", """{"appareil":"tv_salon","touche":"volume_plus","repetitions":3}""")
         assertEquals(false, result["isError"]!!.jsonPrimitive.boolean)
         assertEquals(3, sent.size)
         assertEquals(AuditOutcome.EXECUTED, audit.recent(1).single().outcome)
@@ -93,7 +93,7 @@ class BridgeTest {
     @Test
     fun `l'arret d'urgence fige les actions et ne se leve pas a distance`() {
         call("systeme_arret_urgence", "{}")
-        val blocked = call("ir_envoyer_touche", """{"appareil":"tv_lg","touche":"allumer"}""")
+        val blocked = call("ir_envoyer_touche", """{"appareil":"tv_salon","touche":"allumer"}""")
         assertTrue(blocked["isError"]!!.jsonPrimitive.boolean)
         assertTrue(sent.isEmpty())
         assertTrue(runtime.registry.all().none { it.name.contains("lever") || it.name.contains("reprendre") })
@@ -101,9 +101,9 @@ class BridgeTest {
 
     @Test
     fun `un enfant ne peut piloter que l'appareil autorise`() {
-        val child = Principal("enfant", "Enfant", Role.CHILD, grants = setOf("ir.send.tv_samsung"))
-        assertEquals(false, call("ir_envoyer_touche", """{"appareil":"tv_samsung","touche":"allumer"}""", child)["isError"]!!.jsonPrimitive.boolean)
-        assertEquals(true, call("ir_envoyer_touche", """{"appareil":"tv_lg","touche":"allumer"}""", child)["isError"]!!.jsonPrimitive.boolean)
+        val child = Principal("enfant", "Enfant", Role.CHILD, grants = setOf("ir.send.tv_salon"))
+        assertEquals(false, call("ir_envoyer_touche", """{"appareil":"tv_salon","touche":"allumer"}""", child)["isError"]!!.jsonPrimitive.boolean)
+        assertEquals(true, call("ir_envoyer_touche", """{"appareil":"tv_parents","touche":"allumer"}""", child)["isError"]!!.jsonPrimitive.boolean)
         assertEquals(AuditOutcome.DENIED, audit.recent(1).single().outcome)
     }
 
