@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Les appareils de la maison (décodeur Orange…) ne parlent qu'en HTTP non chiffré sur le réseau local.
+     Le code n'autorise de toute façon que les adresses locales (192.168.x.x, 10.x.x.x, 172.16-31.x.x). -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true" />
+</network-security-config>
