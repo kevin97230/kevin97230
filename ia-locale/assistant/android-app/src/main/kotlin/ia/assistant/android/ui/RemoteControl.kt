@@ -160,7 +160,8 @@ fun Ui.remote(keys: Collection<String>, send: (String) -> Unit): LinearLayout {
         .sortedBy { LABELS.keys.indexOf(it).let { i -> if (i < 0) 99 else i } }
     others.chunked(3).forEachIndexed { i, chunk ->
         val cells = chunk.map { key -> textKey(key, label(key)) }
-        root.addView(fullRow(cells + List(3 - cells.size) { spacer() }, topDp = if (i == 0) 14 else 8))
+        // Une dernière rangée incomplète s'étire sur toute la largeur plutôt que de laisser un trou.
+        root.addView(fullRow(cells, topDp = if (i == 0) 14 else 8))
     }
 
     // 9. Pavé numérique, replié par défaut

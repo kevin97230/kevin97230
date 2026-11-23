@@ -368,7 +368,7 @@ class MainActivity : Activity() {
 
         // Décodeur
         val decoder = app.decoderAddress()
-        decoderStatus.text = if (decoder == null) "Décodeur pas encore trouvé : allumez-le puis touchez Rechercher." else "Décodeur Orange · $decoder (Wi-Fi)"
+        decoderStatus.text = if (decoder == null) "Décodeur pas encore trouvé : allumez-le puis touchez Rechercher." else "Décodeur Orange · $decoder (réseau de la maison)"
 
         // Réglages
         val addresses = DeviceStatus.localAddresses()
