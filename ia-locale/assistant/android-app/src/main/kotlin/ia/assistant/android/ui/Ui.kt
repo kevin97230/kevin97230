@@ -12,6 +12,7 @@ import android.text.style.ForegroundColorSpan
 import android.view.Gravity
 import android.view.HapticFeedbackConstants
 import android.view.View
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 
@@ -58,7 +59,7 @@ class Ui(val context: Context) {
         setColor(color)
     }
 
-    private fun ripple(content: Drawable): RippleDrawable =
+    fun ripple(content: Drawable): RippleDrawable =
         RippleDrawable(ColorStateList.valueOf(Palette.RIPPLE), content, null)
 
     fun vertical(): LinearLayout = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL }
@@ -149,6 +150,70 @@ class Ui(val context: Context) {
 
     /** Case vide qui garde l'alignement quand une touche n'existe pas. */
     fun spacer(): View = View(context).apply { visibility = View.INVISIBLE }
+
+    /** Bouton icône (rond ou arrondi). Désactivé et estompé si [enabled] est faux. */
+    fun iconButton(
+        glyph: Glyph,
+        description: String,
+        backgroundColor: Int = Palette.SURFACE,
+        iconColor: Int = Palette.TEXT,
+        round: Boolean = false,
+        iconDp: Int = 24,
+        enabled: Boolean = true,
+        onClick: () -> Unit,
+    ): ImageView = ImageView(context).apply {
+        setImageDrawable(GlyphDrawable(glyph, iconColor, dp(iconDp)))
+        scaleType = ImageView.ScaleType.CENTER
+        contentDescription = description
+        background = ripple(if (round) oval(backgroundColor) else rounded(backgroundColor, 16))
+        minimumHeight = dp(50)
+        setEnabledLook(enabled)
+        setOnClickListener {
+            it.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
+            onClick()
+        }
+    }
+
+    /** Sélecteur à segments (onglets, Wi-Fi / Infrarouge). */
+    fun segmented(labels: List<String>, selected: Int, onSelect: (Int) -> Unit): LinearLayout {
+        val bar = horizontal().apply {
+            background = rounded(Palette.SURFACE, 50)
+            setPadding(dp(4), dp(4), dp(4), dp(4))
+        }
+        val items = labels.map { label ->
+            TextView(context).apply {
+                text = label
+                gravity = Gravity.CENTER
+                textSize = 14.5f
+                typeface = medium
+                minHeight = dp(42)
+            }
+        }
+        fun select(index: Int) {
+            items.forEachIndexed { i, item ->
+                val on = i == index
+                item.setTextColor(if (on) Palette.BACKGROUND else Palette.MUTED)
+                item.background = if (on) rounded(Palette.ACCENT, 50) else null
+            }
+        }
+        items.forEachIndexed { i, item ->
+            item.setOnClickListener {
+                it.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+                select(i)
+                onSelect(i)
+            }
+            bar.addView(item, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+        }
+        select(selected)
+        return bar
+    }
+}
+
+/** Touche absente pour cet appareil : visible (la grille reste régulière) mais estompée et inactive. */
+fun View.setEnabledLook(enabled: Boolean) {
+    isEnabled = enabled
+    isClickable = enabled
+    alpha = if (enabled) 1f else 0.25f
 }
 
 fun TextView.setChip(label: String, dotColor: Int) {

@@ -37,6 +37,10 @@ class AssistantApp : Application() {
         runtime.pairOwnerComputer(ownerToken())
     }
 
+    /** Adresse du décodeur Orange retenue par la recherche, ou null. */
+    fun decoderAddress(): String? =
+        getSharedPreferences("reglages", Context.MODE_PRIVATE).getString("decodeur_orange.adresse", null)
+
     /** Jeton secret de l'ordinateur du propriétaire, créé au premier lancement. */
     fun ownerToken(): String {
         val prefs = getSharedPreferences(PREFS, Context.MODE_PRIVATE)
