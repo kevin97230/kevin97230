@@ -58,6 +58,8 @@ class MainActivity : Activity() {
     private lateinit var tvWifiActions: LinearLayout
     private lateinit var tvRemoteHolder: FrameLayout
     private lateinit var decoderStatus: TextView
+    private lateinit var decoderNetworkActions: LinearLayout
+    private lateinit var decoderRemoteHolder: FrameLayout
     private lateinit var bridgeStatus: TextView
     private lateinit var bridgeButton: TextView
     private lateinit var emergencyButton: TextView
@@ -224,15 +226,44 @@ class MainActivity : Activity() {
     // ------------------------------------------------------------------ Onglet Décodeur
 
     private fun buildDecoderPage(): View = ui.vertical().apply {
-        decoderStatus = ui.text("", Palette.MUTED, 13f).apply { setPadding(ui.dp(4), 0, ui.dp(4), ui.dp(8)) }
+        addView(ui.segmented(listOf("Réseau", "Infrarouge"), if (decoderUsesNetwork()) 0 else 1) { i ->
+            prefs.edit().putString("mode_decodeur", if (i == 0) "reseau" else "ir").apply()
+            renderDecoderRemote()
+        })
+        decoderStatus = ui.text("", Palette.MUTED, 13f).apply { setPadding(ui.dp(4), ui.dp(12), ui.dp(4), 0) }
         addView(decoderStatus)
-        addView(ui.row(listOf(
+        decoderNetworkActions = ui.row(listOf(
             ui.button("Rechercher le décodeur", ButtonStyle.SECONDARY, heightDp = 44) { runTool("decodeur_rechercher", buildJsonObject {}) },
-        )).apply { (layoutParams as LinearLayout.LayoutParams).topMargin = 0 })
-        addView(remoteCard(ui.remote(OrangeKeys.CODES.keys) { key ->
-            runTool("decodeur_touche", buildJsonObject { put("touche", key) })
-        }), LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+        ))
+        addView(decoderNetworkActions)
+        decoderRemoteHolder = FrameLayout(context)
+        addView(decoderRemoteHolder, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
             .apply { topMargin = ui.dp(12) })
+        renderDecoderRemote()
+    }
+
+    private fun decoderUsesNetwork() = prefs.getString("mode_decodeur", "reseau") != "ir"
+
+    /** Réseau : API locale (rapide, mais le décodeur doit être allumé). Infrarouge : marche même en veille. */
+    private fun renderDecoderRemote() {
+        decoderRemoteHolder.removeAllViews()
+        val remote = if (decoderUsesNetwork()) {
+            ui.remote(OrangeKeys.CODES.keys) { key -> runTool("decodeur_touche", buildJsonObject { put("touche", key) }) }
+        } else {
+            val device = runCatching { app.loadIrLibrary().get("decodeur_orange") }.getOrNull()
+            if (device == null) {
+                ui.text("Aucun code infrarouge pour le décodeur.", Palette.MUTED, 14f)
+            } else {
+                ui.remote(device.buttons.keys) { key ->
+                    runTool("ir_envoyer_touche", buildJsonObject {
+                        put("appareil", device.id)
+                        put("touche", key)
+                    })
+                }
+            }
+        }
+        decoderRemoteHolder.addView(remoteCard(remote))
+        if (::journalList.isInitialized) refresh()
     }
 
     // ------------------------------------------------------------------ Onglet Réglages
@@ -368,7 +399,17 @@ class MainActivity : Activity() {
 
         // Décodeur
         val decoder = app.decoderAddress()
-        decoderStatus.text = if (decoder == null) "Décodeur pas encore trouvé : allumez-le puis touchez Rechercher." else "Décodeur Orange · $decoder (réseau de la maison)"
+        if (decoderUsesNetwork()) {
+            decoderNetworkActions.visibility = View.VISIBLE
+            decoderStatus.text = if (decoder == null) {
+                "Décodeur pas encore trouvé : allumez-le puis touchez Rechercher."
+            } else {
+                "Décodeur Orange · $decoder (réseau de la maison). S'il est en veille profonde, passez en Infrarouge."
+            }
+        } else {
+            decoderNetworkActions.visibility = View.GONE
+            decoderStatus.text = "Infrarouge · fonctionne même en veille. Pointez le haut du téléphone vers le décodeur."
+        }
 
         // Réglages
         val addresses = DeviceStatus.localAddresses()

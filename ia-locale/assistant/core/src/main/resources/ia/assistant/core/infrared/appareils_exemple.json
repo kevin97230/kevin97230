@@ -1,5 +1,5 @@
 {
-  "_note": "TV Panasonic TX-55LX660E (fabriquée par Vestel) : protocole RC5, adresse 1. Codes vérifiés sur la TV (volume, muet) ; les autres viennent de Flipper-IRDB (télécommandes Vestel : Telefunken, JVC, Finlux).",
+  "_note": "TV Panasonic TX-55LX660E (fabriquée par Vestel) : protocole RC5, adresse 1. Codes vérifiés sur la TV (volume, muet) ; les autres viennent de Flipper-IRDB (télécommandes Vestel : Telefunken, JVC, Finlux). Décodeur Orange : NEC étendu, adresse 0x0E86 (Flipper-IRDB Orange_Cable_Box ; volume + vérifié).",
   "appareils": [
     {
       "id": "tv_salon",
@@ -49,6 +49,25 @@
         "chiffre_7": "0x07",
         "chiffre_8": "0x08",
         "chiffre_9": "0x09"
+      }
+    },
+    {
+      "id": "decodeur_orange",
+      "nom": "Décodeur Orange",
+      "marque": "Orange",
+      "protocole": "NEC",
+      "adresse": "86 0E 00 00",
+      "touches": {
+        "allumer": "0x12",
+        "menu": "0x14",
+        "haut": "0x0B",
+        "bas": "0x0C",
+        "gauche": "0x1B",
+        "droite": "0x1C",
+        "ok": "0x15",
+        "volume_plus": "0x0D",
+        "volume_moins": "0x0E",
+        "muet": "0x0F"
       }
     }
   ]

@@ -86,6 +86,22 @@ class OrangeDecoderTest {
     }
 
     @Test
+    fun `decodeur injoignable message clair`() {
+        val closedPort = java.net.ServerSocket(0).use { it.localPort }
+        settings.set("decodeur_orange.adresse", "127.0.0.1")
+        val e = assertFailsWith<IllegalStateException> {
+            OrangeDecoderKeyTool(settings, OrangeDecoderClient(port = closedPort)).execute(args("touche" to "ok"), context)
+        }
+        assertTrue(e.message!!.contains("veille profonde"), e.message)
+    }
+
+    @Test
+    fun `interfaces mobiles et VPN ignorees`() {
+        listOf("rmnet_data0", "ccmni1", "tun0").forEach { assertTrue(LocalNetwork.isMobileOrVpn(it), it) }
+        listOf("wlan0", "eth0", "en0").forEach { assertFalse(LocalNetwork.isMobileOrVpn(it), it) }
+    }
+
+    @Test
     fun `seules les adresses locales sont acceptees`() {
         listOf("192.168.1.20", "10.0.0.5", "172.16.3.4", "127.0.0.1").forEach { assertTrue(LocalNetwork.isLocalIpv4(it), it) }
         listOf("8.8.8.8", "172.32.0.1", "192.169.1.1", "exemple.fr", "192.168.1.300", "100.64.0.1").forEach {

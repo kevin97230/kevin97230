@@ -53,7 +53,12 @@ class OrangeDecoderClient(val port: Int = DEFAULT_PORT) {
         connection.connectTimeout = timeoutMs
         connection.readTimeout = timeoutMs
         try {
-            check(connection.responseCode == 200) { "Le décodeur a répondu ${connection.responseCode}." }
+            val status = try {
+                connection.responseCode
+            } catch (e: java.io.IOException) {
+                throw IllegalStateException(UNREACHABLE.format(host), e)
+            }
+            check(status == 200) { "Le décodeur a répondu $status." }
             return connection.inputStream.use { it.readBytes().toString(Charsets.UTF_8) }
         } finally {
             connection.disconnect()
@@ -62,6 +67,11 @@ class OrangeDecoderClient(val port: Int = DEFAULT_PORT) {
 
     companion object {
         const val DEFAULT_PORT = 8080
+
+        /** Le décodeur ne répond plus : en veille profonde, il quitte le réseau. */
+        const val UNREACHABLE =
+            "Décodeur injoignable (%s) : il est probablement en veille profonde. Rallumez-le avec sa télécommande, " +
+                "ou utilisez le mode Infrarouge de l'onglet Décodeur. Astuce : réglez sa veille sur « rapide » dans ses paramètres."
     }
 }
 
@@ -127,8 +137,8 @@ class OrangeDecoderFindTool(
         if (found.isEmpty()) {
             val range = hosts.map { it.substringBeforeLast('.') }.distinct().joinToString { "$it.x" }
             return ToolResult.error(
-                "Aucun décodeur Orange trouvé (${hosts.size} adresses testées sur $range, port ${client.port}). " +
-                    "Vérifiez qu'il est allumé et sur le même réseau que le téléphone.",
+                "Aucun décodeur Orange trouvé (${hosts.size} adresses testées sur $range). " +
+                    "Il est sans doute éteint ou en veille profonde : allumez-le avec sa télécommande, puis relancez la recherche.",
             )
         }
         settings.set(DECODER_ADDRESS_KEY, found.first())

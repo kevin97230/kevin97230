@@ -37,7 +37,7 @@ object LocalNetwork {
     /** Toutes les adresses du (des) réseau(x) Wi-Fi / Ethernet local(aux) en /24, sauf la nôtre. */
     fun neighbourHosts(): List<String> = runCatching {
         NetworkInterface.getNetworkInterfaces().toList()
-            .filter { it.isUp && !it.isLoopback && !it.isVirtual && !it.name.startsWith("tun") }
+            .filter { it.isUp && !it.isLoopback && !it.isVirtual && !isMobileOrVpn(it.name) }
             .flatMap { it.interfaceAddresses }
             .mapNotNull { it.address as? Inet4Address }
             .map { it.hostAddress.orEmpty() }
@@ -48,6 +48,11 @@ object LocalNetwork {
             }
             .distinct()
     }.getOrDefault(emptyList())
+
+    /** Interfaces à ignorer : données mobiles (rmnet, ccmni…), VPN (tun), partage, interfaces virtuelles. */
+    private val IGNORED_INTERFACES = listOf("rmnet", "ccmni", "tun", "ppp", "wwan", "clat", "v4-", "dummy", "p2p", "rndis", "ipsec")
+
+    internal fun isMobileOrVpn(name: String): Boolean = IGNORED_INTERFACES.any { name.lowercase().startsWith(it) }
 
     /** Teste les adresses en parallèle et renvoie celles pour lesquelles [probe] répond vrai. */
     fun scan(hosts: List<String>, threads: Int = 48, probe: (String) -> Boolean): List<String> {

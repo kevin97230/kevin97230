@@ -139,4 +139,4 @@ En place :
 ./gradlew test
 ```
 
-26 tests couvrent la sécurité, l'encodage infrarouge, le protocole MCP et le transport HTTP (jeton, refus des navigateurs).
+28 tests couvrent la sécurité, l'encodage infrarouge, le protocole MCP et le transport HTTP (jeton, refus des navigateurs).
