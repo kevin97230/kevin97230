@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "ki-ntuni": {
+      "type": "http",
+      "url": "https://zkxluotjzqzqvgynguza.supabase.co/functions/v1/mcp"
+    }
+  }
+}

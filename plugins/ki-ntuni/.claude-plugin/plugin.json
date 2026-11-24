@@ -1,0 +1,7 @@
+{
+  "name": "ki-ntuni",
+  "version": "1.0.0",
+  "description": "Assistant de rédaction des dossiers Ki-Tuni du Centre TEORA via le serveur MCP KI-NTUNI (lecture + brouillons uniquement).",
+  "author": { "name": "Centre TEORA" },
+  "keywords": ["ki-tuni", "teora", "mcp", "redaction"]
+}

@@ -1,0 +1,17 @@
+{
+  "name": "centre-teora",
+  "owner": { "name": "Centre TEORA" },
+  "metadata": {
+    "description": "Plugins Claude Code du Centre TEORA",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "ki-ntuni",
+      "source": "./plugins/ki-ntuni",
+      "description": "Connecte Claude au serveur MCP KI-NTUNI pour lire les dossiers Ki-Tuni et rédiger des brouillons de sections.",
+      "version": "1.0.0",
+      "category": "productivity"
+    }
+  ]
+}
