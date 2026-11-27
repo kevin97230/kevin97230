@@ -92,7 +92,8 @@ class AssistantRuntime(private val platform: PlatformServices) {
                     name = "TV Panasonic du salon",
                     aliases = setOf("télé", "tele", "television", "tv_salon", "panasonic"),
                     routes = listOf(tvWifi, tvIr),
-                    power = TvPower(tvWifi, tvIr),
+                    power = TvPower(tvWifi, tvIr, tvWifi::isOn),
+                    stateReader = { if (tvWifi.ready) tvWifi.isOn()?.let { if (it) "allumée" else "éteinte" } else null },
                 ),
                 RemoteDevice(
                     id = "decodeur",

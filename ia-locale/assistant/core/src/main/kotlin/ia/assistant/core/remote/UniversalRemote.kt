@@ -93,13 +93,26 @@ class UniversalRemote(val devices: List<RemoteDevice>) {
     }
 }
 
-/** TV Android : en Wi-Fi on sait allumer *ou* éteindre ; en infrarouge, une seule touche qui bascule. */
-class TvPower(private val wifi: KeyRoute, private val ir: KeyRoute) : PowerControl {
+/**
+ * TV Android. En Wi-Fi, la TV dit si son écran est allumé : on n'envoie la touche marche/arrêt
+ * que si c'est utile. (Essai du 27/11/2026 sur la Panasonic : la touche « veille » d'Android est
+ * acceptée mais ignorée ; la touche marche/arrêt, elle, fonctionne.) En infrarouge, une seule touche qui bascule.
+ */
+class TvPower(
+    private val wifi: KeyRoute,
+    private val ir: KeyRoute,
+    /** true = écran allumé, false = éteint, null = inconnu ou injoignable. */
+    private val isOn: () -> Boolean? = { null },
+) : PowerControl {
     override fun set(on: Boolean): String {
         if (wifi.ready) {
+            val state = isOn()
+            if (state == on) return if (on) "TV déjà allumée." else "TV déjà éteinte."
             try {
-                wifi.press(if (on) "reveil" else "veille")
-                return if (on) "TV allumée (Wi-Fi)." else "TV mise en veille (Wi-Fi)."
+                // État connu et différent : la bascule est sûre. État inconnu : « réveil » n'éteint jamais.
+                wifi.press(if (state == null && on) "reveil" else "allumer")
+                val suffix = if (state == null && !on) " L'état de la TV n'était pas connu : si elle s'est allumée, recommencez." else ""
+                return (if (on) "TV allumée (Wi-Fi)." else "TV éteinte (Wi-Fi).") + suffix
             } catch (e: Exception) {
                 // La TV appairée ne répond plus en Wi-Fi : elle est en veille profonde, donc éteinte.
                 if (!on) return "La TV ne répond pas en Wi-Fi : elle est sans doute déjà éteinte. Rien n'a été envoyé."

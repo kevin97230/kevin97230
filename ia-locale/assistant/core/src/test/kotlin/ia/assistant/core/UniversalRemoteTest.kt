@@ -119,10 +119,23 @@ class UniversalRemoteTest {
     }
 
     @Test
-    fun `allumer la TV par le Wi-Fi utilise le reveil, jamais la bascule`() {
-        RemotePowerTool(remote, on = true).execute(args("appareil" to "tv"), context)
-        RemotePowerTool(remote, on = false).execute(args("appareil" to "tv"), context)
-        assertEquals(listOf("reveil", "veille"), tvWifi.pressed)
+    fun `TV en Wi-Fi - marche-arret seulement si son etat le demande`() {
+        var screen: Boolean? = true
+        val power = TvPower(tvWifi, tvIr) { screen }
+        assertTrue("déjà allumée" in power.set(true))
+        assertTrue(tvWifi.pressed.isEmpty())
+        power.set(false)
+        assertEquals(listOf("allumer"), tvWifi.pressed, "la touche veille est ignorée par la Panasonic : marche/arrêt")
+        screen = false
+        assertTrue("déjà éteinte" in power.set(false))
+        power.set(true)
+        assertEquals(listOf("allumer", "allumer"), tvWifi.pressed)
+    }
+
+    @Test
+    fun `TV en Wi-Fi sans etat connu - le reveil pour allumer, jamais une bascule`() {
+        TvPower(tvWifi, tvIr).set(true)
+        assertEquals(listOf("reveil"), tvWifi.pressed)
     }
 
     @Test

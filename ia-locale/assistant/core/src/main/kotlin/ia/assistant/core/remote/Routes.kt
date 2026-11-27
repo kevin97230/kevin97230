@@ -47,6 +47,18 @@ class AndroidTvRoute(private val tv: AndroidTvService) : KeyRoute {
         tv.withRemote { it.pressKey(code) }
     }
 
+    /**
+     * La TV dit elle-même si l'écran est allumé (message « start » du protocole), juste après la connexion.
+     * @return true / false, ou null si elle ne l'a pas dit (ou ne répond pas).
+     */
+    fun isOn(waitMillis: Long = 1500): Boolean? = runCatching {
+        tv.withRemote { remote ->
+            val deadline = System.currentTimeMillis() + waitMillis
+            while (remote.isOn == null && System.currentTimeMillis() < deadline) Thread.sleep(50)
+            remote.isOn
+        }
+    }.getOrNull()
+
     companion object {
         /**
          * Touches Android (KeyEvent) : celles de [AndroidTvKeys] et des touches directes en plus,
