@@ -81,3 +81,78 @@ class IrSendButtonTool(
         return ToolResult.ok("Touche « $button » envoyée à ${device.name}$times.")
     }
 }
+
+/**
+ * Règle le volume à une valeur précise (« mets le volume à 17 »).
+ *
+ * L'infrarouge ne marche que dans un sens : la TV ne dit jamais à quel volume elle est.
+ * On appuie donc d'abord sur `volume_moins` assez de fois pour être sûr d'arriver à 0,
+ * puis exactement N fois sur `volume_plus`. C'est plus lent qu'un appui direct, mais
+ * le résultat est juste même si quelqu'un a utilisé la vraie télécommande juste avant.
+ */
+class IrSetVolumeTool(
+    private val library: () -> IrLibrary,
+    private val transmitter: IrTransmitter,
+    private val pauseBetweenPressesMillis: Long = 120,
+    private val defaultDescent: Int = DEFAULT_DESCENT,
+) : Tool {
+    override val name = "ir_regler_volume"
+    override val description =
+        "Règle le volume d'un appareil à une valeur précise (ex. « mets le volume à 17 »), via l'émetteur " +
+            "infrarouge du téléphone. Descend d'abord à 0 avec volume_moins, puis remonte avec volume_plus : " +
+            "cela prend environ un quart de seconde par cran (≈ 12 s pour descendre de 50). " +
+            "Le téléphone doit rester orienté vers l'appareil pendant tout ce temps."
+    override val inputSchema = objectSchema(
+        properties = mapOf(
+            "appareil" to stringProperty("Identifiant de l'appareil, ex. tv_salon."),
+            "volume" to intProperty("Volume voulu, ex. 17.", 0, MAX_VOLUME),
+            "descente" to intProperty(
+                "Nombre d'appuis sur volume_moins pour être sûr d'arriver à 0 (par défaut $DEFAULT_DESCENT). " +
+                    "À baisser si le son n'est jamais réglé très fort, pour aller plus vite.",
+                1,
+                MAX_VOLUME,
+            ),
+        ),
+        required = listOf("appareil", "volume"),
+    )
+    override val risk = RiskLevel.LOW
+
+    /** Même permission que pour une touche : qui peut monter le son peut le régler. */
+    override fun requiredPermission(arguments: JsonObject) = "ir.send.${arguments.requireString("appareil")}"
+
+    override fun execute(arguments: JsonObject, context: ToolContext): ToolResult {
+        val deviceId = arguments.requireString("appareil")
+        val target = arguments.optionalInt("volume", default = -1, range = -1..MAX_VOLUME)
+        if (target < 0) throw ToolArgumentException("Argument « volume » manquant (nombre entier de 0 à $MAX_VOLUME).")
+        val descent = arguments.optionalInt("descente", default = defaultDescent, range = 1..MAX_VOLUME)
+
+        val device = library().get(deviceId)
+            ?: throw ToolArgumentException("Appareil « $deviceId » inconnu. Utilisez ir_lister_appareils.")
+        val missing = listOf(VOLUME_DOWN, VOLUME_UP).filter { it !in device.buttons }
+        if (missing.isNotEmpty()) {
+            throw ToolArgumentException("${device.name} n'a pas de touche ${missing.joinToString(" ni ")} : impossible de régler le volume.")
+        }
+        if (!transmitter.isAvailable) {
+            return ToolResult.error("Aucun émetteur infrarouge disponible sur cet appareil.")
+        }
+
+        var presses = 0
+        fun press(button: String) {
+            if (presses > 0) Thread.sleep(pauseBetweenPressesMillis)
+            // Signal recalculé à chaque appui (bit de bascule RC5 : chaque appui compte pour un cran).
+            transmitter.transmit(device.signalFor(button))
+            presses++
+        }
+        repeat(descent) { press(VOLUME_DOWN) }
+        repeat(target) { press(VOLUME_UP) }
+
+        return ToolResult.ok("Volume de ${device.name} réglé à $target ($descent crans vers le bas, puis $target vers le haut).")
+    }
+
+    companion object {
+        const val MAX_VOLUME = 100
+        const val DEFAULT_DESCENT = 50
+        private const val VOLUME_UP = "volume_plus"
+        private const val VOLUME_DOWN = "volume_moins"
+    }
+}

@@ -13,6 +13,7 @@ import ia.assistant.core.bridge.TokenAuthenticator
 import ia.assistant.core.infrared.IrLibrary
 import ia.assistant.core.infrared.IrListDevicesTool
 import ia.assistant.core.infrared.IrSendButtonTool
+import ia.assistant.core.infrared.IrSetVolumeTool
 import ia.assistant.core.infrared.IrTransmitter
 import ia.assistant.core.network.InMemorySettings
 import ia.assistant.core.network.LocalNetwork
@@ -65,6 +66,7 @@ class AssistantRuntime(private val platform: PlatformServices) {
         .register(TvAppTool(androidTv))
         .register(IrListDevicesTool(platform.irLibrary))
         .register(IrSendButtonTool(platform.irLibrary, platform.irTransmitter))
+        .register(IrSetVolumeTool(platform.irLibrary, platform.irTransmitter))
         .register(OrangeDecoderFindTool(platform.settings, platform.orangeDecoder, platform.neighbourHosts))
         .register(OrangeDecoderKeyTool(platform.settings, platform.orangeDecoder))
         .register(OrangeDecoderChannelTool(platform.settings, platform.orangeDecoder))
