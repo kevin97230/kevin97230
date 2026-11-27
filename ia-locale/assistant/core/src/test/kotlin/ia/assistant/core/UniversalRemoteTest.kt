@@ -268,7 +268,7 @@ class RemoteRuntimeTest {
             .forEach { assertTrue(it in names, "$it manquant") }
         val inventory = call(owner, "maison_appareils")
         assertFalse(inventory.isError, inventory.text)
-        assertTrue("infrarouge : prêt" in inventory.text)
+        assertTrue("infrarouge : configuré" in inventory.text)
         assertTrue("mode_film" in inventory.text)
     }
 

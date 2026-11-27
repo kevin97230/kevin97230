@@ -66,7 +66,7 @@ class HomeInventoryTool(
                 d.state()?.let { append(" — $it") }
                 appendLine()
                 d.routes.forEach { r ->
-                    appendLine("   ${r.label} : " + if (r.ready) "prêt" else "indisponible (${r.notReadyReason})")
+                    appendLine("   ${r.label} : " + if (r.ready) "configuré" else "indisponible (${r.notReadyReason})")
                 }
                 appendLine("   Touches : ${d.keys.joinToString()}")
             }
