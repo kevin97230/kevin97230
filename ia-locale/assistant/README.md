@@ -15,7 +15,27 @@ Première brique du projet décrit dans [`../VISION.md`](../VISION.md).
 | 🔔 **Notifications** | Claude peut vous envoyer un message sur le téléphone |
 | 📱 **État du téléphone** | Batterie, modèle, réseau, infrarouge |
 
-### Les outils que Claude voit
+### 🎮 La télécommande universelle (ce que Claude utilise en priorité)
+
+Claude n'a plus à choisir entre Wi-Fi et infrarouge : chaque ordre passe par le **Wi-Fi** si l'appareil
+est configuré, et bascule tout seul sur l'**infrarouge** s'il ne répond pas (sans appui en double).
+
+| Outil | Rôle |
+|---|---|
+| `maison_appareils` | À appeler en premier : appareils, par où ils répondent, état, touches, chaînes et scénarios |
+| `touche` | Une touche de la TV ou du décodeur (`appareil` : tv / decodeur, `touche`, `repetitions`) |
+| `allumer` / `eteindre` | La TV, le décodeur ou `tout`. En Wi-Fi, allume *ou* éteint vraiment (pas de bascule) ; le décodeur n'est touché que si c'est utile |
+| `chaine` | Par `numero` ou par `nom` (TF1, France 5, M6…) |
+| `chaine_enregistrer` | Apprend le numéro d'une chaîne pour l'appeler par son nom |
+| `volume` | `plus` / `moins` (`crans`), `muet`, ou `regler` à une `valeur` précise |
+| `source` | Entrée de la TV : `decodeur`, `hdmi1` à `hdmi4`, `tv` |
+| `telecommande_regler` | Sur quelle entrée HDMI est branché le décodeur (1 par défaut) |
+| `scenario_lancer` | `regarder_tele`, `mode_film`, `tout_eteindre`, ou un scénario créé |
+| `scenario_creer` / `scenario_supprimer` | Claude crée vos propres scénarios (« soirée foot »…), retenus sur le téléphone |
+
+Chaque étape d'un scénario repasse par la sécurité (autorisations, arrêt d'urgence) et s'inscrit au journal.
+
+### Les outils détaillés (gardés en secours)
 
 | Outil | Rôle |
 |---|---|
