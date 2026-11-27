@@ -21,6 +21,7 @@ Première brique du projet décrit dans [`../VISION.md`](../VISION.md).
 |---|---|
 | `ir_lister_appareils` | Liste les appareils et leurs touches |
 | `ir_envoyer_touche` | Appuie sur une touche (`appareil`, `touche`, `repetitions`) |
+| `ir_regler_volume` | Règle le volume à une valeur précise (`appareil`, `volume`, `descente` facultative) : descend à 0 puis remonte, ≈ un quart de seconde par cran |
 | `tv_rechercher` | Trouve la TV Android sur le Wi-Fi |
 | `tv_appairer` puis `tv_code` | Appairage unique : la TV affiche un code à 6 caractères |
 | `tv_touche` | Touche de la TV par le Wi-Fi (`touche`, `repetitions`) |
@@ -58,7 +59,7 @@ cd ia-locale\assistant
 Sous Mac ou Linux : `./gradlew :simulator:installDist` puis `simulator/build/install/simulator/bin/simulator`.
 
 Le simulateur affiche une commande `claude mcp add …`. Copiez-la dans un autre terminal, lancez `claude`,
-puis demandez par exemple : *« Liste les appareils infrarouges et monte le volume de la TV du salon de 3 crans. »*
+puis demandez par exemple : *« Liste les appareils infrarouges et monte le volume de la TV du salon de 3 crans. »* ou *« Mets le volume de la TV à 17. »*
 Le simulateur cherche aussi le décodeur Orange sur le réseau de l'ordinateur : si l'ordinateur est sur le Wi-Fi
 de la Livebox, *« Trouve le décodeur et mets la chaîne 2 »* fonctionne déjà pour de vrai.
 Les signaux infrarouges s'affichent dans la console du simulateur.
